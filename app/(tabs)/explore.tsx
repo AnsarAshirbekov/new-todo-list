@@ -6,7 +6,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { addTodo } from '../../features/todos/todosSlice';
 import { useNavigation } from '@react-navigation/native';
-import { FA5Style } from '@expo/vector-icons/build/FontAwesome5';
+import Toast from 'react-native-toast-message';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
 
 const generateId = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -20,6 +22,7 @@ const CameraScreen = () => {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [scannedData, setScannedData] = useState<string | null>(null);
   const [hasScanned, setHasScanned] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
 
   const navigation = useNavigation();
   const todos = useSelector((state: RootState) => state.todos.todos)
@@ -34,27 +37,36 @@ const CameraScreen = () => {
   }, [permission]);
 
   const handleBarcodeScanned = (result: BarcodeScanningResult) => {
-  if (hasScanned) return;
+    if (hasScanned) return;
 
-  const { data } = result;
+    const { data } = result;
 
-  setScannedData(data);
-  setHasScanned(true);
+    setScannedData(data);
+    setHasScanned(true);
 
-  dispatch(addTodo({
-    id: generateId(),
-    title: data
-  }));
+    dispatch(addTodo({
+      id: generateId(),
+      title: data
+    }));
 
-  setHasScanned(false)
+    // Показать Toast
+    Toast.show({
+      type: 'success',
+      text1: 'Отсканировано',
+      text2: 'Новая задача добавлена ✅',
+      position: 'bottom',
+      visibilityTime: 2000, // миллисекунды (2 секунды)
+    });
 
-  
+    setTimeout(() => {
+      setFlashOn(false)
+      navigation.goBack();
+    }, 2000);
 
-  // Подожди чуть-чуть (например, 500 мс), чтобы UI не дернулся, и навигируй
-  // setTimeout(() => {
-  //   navigation.navigate('TodoList'); // Название маршрута из твоего навигатора
-  // }, 500);
-};
+    setTimeout(() => {
+      setHasScanned(false);
+    }, 3000)
+  };
 
   if (!permission || !permission.granted) {
     return (
@@ -69,15 +81,25 @@ const CameraScreen = () => {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={styles.preview}
-        facing="back"
-        // onCameraReady={() => setIsCameraReady(true)}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],  // можно указать другие типы, если нужно
-        }}
-        onBarcodeScanned={handleBarcodeScanned}
-      />
+      {!hasScanned && (
+        <CameraView
+          flash='on'
+          enableTorch={flashOn === true ? true : false}
+          active
+          style={styles.preview}
+          facing="back"
+          // onCameraReady={() => setIsCameraReady(true)}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],  // можно указать другие типы, если нужно
+          }}
+          onBarcodeScanned={handleBarcodeScanned}
+        />
+      )}
+      <View style={styles.flash}>
+        <TouchableOpacity onPress={() => { flashOn === false ? setFlashOn(true) : setFlashOn(false) }}>
+          <MaterialIcons name="flashlight-on" size={36} color="black" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.controls}>
         <Text style={styles.scannedText}>
           {scannedData ? `Scanned: ${scannedData}` : 'Ничего не сканировано'}
@@ -99,6 +121,15 @@ const styles = StyleSheet.create({
     color: 'white',
     marginTop: 10,
   },
+  flash: {
+    position: "absolute",
+    bottom: 100,
+    width: "100%",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center"
+
+  }
 });
 
 export default CameraScreen;
