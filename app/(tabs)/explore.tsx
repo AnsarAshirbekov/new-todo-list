@@ -8,6 +8,7 @@ import { addTodo } from '../../features/todos/todosSlice';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Vibration } from 'react-native';
 
 
 const generateId = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -27,6 +28,7 @@ const CameraScreen = () => {
   const navigation = useNavigation();
   const todos = useSelector((state: RootState) => state.todos.todos)
   const dispatch = useDispatch()
+
 
   useEffect(() => {
     (async () => {
@@ -49,13 +51,14 @@ const CameraScreen = () => {
       title: data
     }));
 
-    // Показать Toast
+    Vibration.vibrate(1000)
+
     Toast.show({
       type: 'success',
       text1: 'Отсканировано',
       text2: 'Новая задача добавлена ✅',
       position: 'bottom',
-      visibilityTime: 2000, // миллисекунды (2 секунды)
+      visibilityTime: 2000,
     });
 
     setTimeout(() => {
@@ -65,6 +68,7 @@ const CameraScreen = () => {
 
     setTimeout(() => {
       setHasScanned(false);
+      setScannedData(null);
     }, 3000)
   };
 
@@ -95,41 +99,51 @@ const CameraScreen = () => {
           onBarcodeScanned={handleBarcodeScanned}
         />
       )}
-      <View style={styles.flash}>
-        <TouchableOpacity onPress={() => { flashOn === false ? setFlashOn(true) : setFlashOn(false) }}>
-          <MaterialIcons name="flashlight-on" size={36} color="black" />
-        </TouchableOpacity>
-      </View>
       <View style={styles.controls}>
         <Text style={styles.scannedText}>
           {scannedData ? `Scanned: ${scannedData}` : 'Ничего не сканировано'}
         </Text>
+      </View>
+      <View style={styles.flash}>
+        <TouchableOpacity
+          onPress={() => { flashOn === false ? setFlashOn(true) : setFlashOn(false) }}>
+          <MaterialIcons name="flashlight-on" size={36} color="black" />
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'black' },
-  preview: { flex: 1 },
+  container: {
+    flex: 1,
+    display: "flex",
+    justifyContent: "center",
+    padding: 25,
+    backgroundColor: '#fafafa',
+  },
+  preview: {
+    height: 500,
+    borderRadius: 25
+
+  },
   controls: {
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 25,
+    backgroundColor: "#f1e1e1ff",
   },
   scannedText: {
-    color: 'white',
+    color: 'black',
     marginTop: 10,
   },
   flash: {
-    position: "absolute",
-    bottom: 100,
+    marginTop: 24,
     width: "100%",
     display: "flex",
     flexDirection: "row",
-    justifyContent: "center"
-
-  }
+    justifyContent: "center",
+  },
 });
 
 export default CameraScreen;
